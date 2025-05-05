@@ -93,6 +93,8 @@ const PrivilegeReadOnly: React.FC<PrivilegeReadOnlyProps> = ({ privilege }) => {
               <TableHead>Requested URL</TableHead>
               <TableHead>Scopes</TableHead>
               <TableHead>Method</TableHead>
+              <TableHead>Fields</TableHead>
+              <TableHead>Response Filter Criteria</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -107,6 +109,10 @@ const PrivilegeReadOnly: React.FC<PrivilegeReadOnlyProps> = ({ privilege }) => {
                     : rule.scopes || "-"}
                 </TableCell>
                 <TableCell>{rule.requestedMethod}</TableCell>
+                <TableCell>{rule.responseModeration.fields}</TableCell>
+                <TableCell>
+                  {rule.responseModeration.responseFilterCriteria}
+                </TableCell>
               </TableRow>
             ))}
             {(!privilege.privilegeRules ||

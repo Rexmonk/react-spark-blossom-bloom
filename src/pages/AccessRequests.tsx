@@ -121,11 +121,19 @@ const AccessRequests: React.FC = () => {
     callerClientId: string
   ) => {
     // If we're granting or rejecting, show the response moderation dialog first
-    if (newState === "GRANTED" || newState === "REJECTED") {
+    if (newState === "REJECTED") {
       setResponseModeration({
         fields: "",
         responseFilterCriteria: "",
       });
+      setShowResponseModeration(true);
+      setStateChangeConfirm({
+        requestId,
+        newState,
+        calleeClientId,
+        callerClientId,
+      });
+    } else if (newState === "GRANTED") {
       setShowResponseModeration(true);
       setStateChangeConfirm({
         requestId,
@@ -158,15 +166,15 @@ const AccessRequests: React.FC = () => {
         calleeClientId: calleeClientId,
         callerClientId: callerClientId,
       };
-
+      console.log("newState", newState);
+      console.log("responseModeration", responseModeration);
+      console.log(":showResponseModeration", showResponseModeration);
       // If we're granting or rejecting and have response moderation data, include it
-      if (
-        (newState === "GRANTED" || newState === "REJECTED") &&
-        showResponseModeration
-      ) {
+      if (newState === "GRANTED" || newState === "REJECTED") {
         updateRequest.responseModeration = responseModeration;
+        console.log("updateRequest 1", updateRequest);
       }
-
+      console.log("updateRequest", updateRequest);
       await updatePrivilegeState(updateRequest);
 
       setRequests((prevRequests) =>
