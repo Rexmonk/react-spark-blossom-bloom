@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   PrivilegeRequest,
+  PrivilegeRule,
   PrivilegeState,
   PrivilegeUpdateRequest,
   ResponseModeration,
@@ -64,6 +65,7 @@ const AccessRequests: React.FC = () => {
     newState: PrivilegeState;
     calleeClientId: string;
     callerClientId: string;
+    privilegeRules: PrivilegeRule[];
   } | null>(null);
   const [responseModeration, setResponseModeration] =
     useState<ResponseModeration>({
@@ -118,45 +120,54 @@ const AccessRequests: React.FC = () => {
     requestId: string,
     newState: PrivilegeState,
     calleeClientId: string,
-    callerClientId: string
+    callerClientId: string,
+    privilegeRules: PrivilegeRule[]
   ) => {
     // If we're granting or rejecting, show the response moderation dialog first
     if (newState === "REJECTED") {
-      setResponseModeration({
-        fields: "",
-        responseFilterCriteria: "",
-      });
-      setShowResponseModeration(true);
+      // setResponseModeration({
+      //   fields: "",
+      //   responseFilterCriteria: "",
+      // });
+      setShowResponseModeration(false);
       setStateChangeConfirm({
         requestId,
         newState,
         calleeClientId,
         callerClientId,
+        privilegeRules,
       });
     } else if (newState === "GRANTED") {
       setShowResponseModeration(true);
+      console.log("requestId ==", requestId);
       setStateChangeConfirm({
         requestId,
         newState,
         calleeClientId,
         callerClientId,
+        privilegeRules,
       });
     } else {
       // For other states, go directly to confirmation
-      setStateChangeConfirm({
-        requestId,
-        newState,
-        calleeClientId,
-        callerClientId,
-      });
+      // setStateChangeConfirm({
+      //   requestId,
+      //   newState,
+      //   calleeClientId,
+      //   callerClientId,
+      // });
     }
   };
 
   const confirmStateChange = async () => {
     if (!stateChangeConfirm) return;
-
-    const { requestId, newState, calleeClientId, callerClientId } =
-      stateChangeConfirm;
+    console.log("stateChangeConfirm = ", stateChangeConfirm);
+    const {
+      requestId,
+      newState,
+      calleeClientId,
+      callerClientId,
+      privilegeRules,
+    } = stateChangeConfirm;
 
     try {
       setUpdateLoading(requestId);
@@ -165,15 +176,13 @@ const AccessRequests: React.FC = () => {
         state: newState,
         calleeClientId: calleeClientId,
         callerClientId: callerClientId,
+        privilegeRules: privilegeRules,
       };
-      console.log("newState", newState);
-      console.log("responseModeration", responseModeration);
-      console.log(":showResponseModeration", showResponseModeration);
       // If we're granting or rejecting and have response moderation data, include it
-      if (newState === "GRANTED" || newState === "REJECTED") {
-        updateRequest.responseModeration = responseModeration;
-        console.log("updateRequest 1", updateRequest);
-      }
+      // if (newState === "GRANTED" || newState === "REJECTED") {
+      //   updateRequest.responseModeration = responseModeration;
+      //   console.log("updateRequest 1", updateRequest);
+      // }
       console.log("updateRequest", updateRequest);
       await updatePrivilegeState(updateRequest);
 
@@ -278,7 +287,8 @@ const AccessRequests: React.FC = () => {
                                 request.id!,
                                 value as PrivilegeState,
                                 request.calleeClientId,
-                                request.callerClientId
+                                request.callerClientId,
+                                request.privilegeRules
                               )
                             }
                           >
@@ -329,7 +339,9 @@ const AccessRequests: React.FC = () => {
 
       {/* Response Moderation Dialog */}
       <Dialog
-        open={showResponseModeration}
+        open={
+          showResponseModeration && stateChangeConfirm.newState === "GRANTED"
+        }
         onOpenChange={(open) => !open && setShowResponseModeration(false)}
       >
         <DialogContent>
@@ -337,36 +349,82 @@ const AccessRequests: React.FC = () => {
             <DialogTitle>Response Moderation</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="fields">Response Fields</Label>
-              <Input
-                id="fields"
-                placeholder="Response Fields"
-                value={responseModeration.fields}
-                onChange={(e) =>
-                  setResponseModeration({
-                    ...responseModeration,
-                    fields: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="responseFilterCriteria">
-                Response Filter Criteria
-              </Label>
-              <Textarea
-                id="responseFilterCriteria"
-                placeholder="Response Filter Criteria"
-                value={responseModeration.responseFilterCriteria}
-                onChange={(e) =>
-                  setResponseModeration({
-                    ...responseModeration,
-                    responseFilterCriteria: e.target.value,
-                  })
-                }
-                rows={3}
-              />
+            <div style={{ maxHeight: "600px", overflow: "auto" }}>
+              {stateChangeConfirm?.privilegeRules.map((elem, index) => (
+                <div className="border rounded p-3 mb-3">
+                  <div className="space-y-2" key={index}>
+                    <Label htmlFor="description">Description</Label>
+                    <Input
+                      id="description"
+                      placeholder="Description"
+                      readOnly
+                      value={elem.description}
+                    />
+                  </div>
+                  <div className="space-y-2" key={index}>
+                    <Label htmlFor="requestedURL">RequestedURL</Label>
+                    <Input
+                      id="requestedURL"
+                      placeholder="RequestedURL"
+                      readOnly
+                      value={elem.requestedURL}
+                    />
+                  </div>
+                  <div className="space-y-2" key={index}>
+                    <Label htmlFor="scopes">Scopes</Label>
+                    <Input
+                      id="scopes"
+                      placeholder="Scopes"
+                      readOnly
+                      value={elem.scopes}
+                    />
+                  </div>
+                  <div className="space-y-2" key={index}>
+                    <Label htmlFor="requestedmethod">Requested Method</Label>
+                    <Input
+                      id="requestedmethod"
+                      placeholder="Requested Method"
+                      readOnly
+                      value={elem.requestedMethod}
+                    />
+                  </div>
+                  <div className="space-y-2" key={index}>
+                    <Label htmlFor="responsefields">Response Fields</Label>
+                    <Input
+                      id="responsefields"
+                      placeholder="Response Fields"
+                      value={elem.responseModeration.fields}
+                      onChange={(e) => {
+                        stateChangeConfirm.privilegeRules[
+                          index
+                        ].responseModeration.fields = e.target.value;
+                        setStateChangeConfirm({
+                          ...stateChangeConfirm,
+                        });
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2" key={index}>
+                    <Label htmlFor="responseFilterCriteria">
+                      Response Filter Criteria
+                    </Label>
+                    <Textarea
+                      id="responseFilterCriteria"
+                      placeholder="Response Filter Criteria"
+                      value={elem.responseModeration.responseFilterCriteria}
+                      onChange={(e) => {
+                        stateChangeConfirm.privilegeRules[
+                          index
+                        ].responseModeration.responseFilterCriteria =
+                          e.target.value;
+                        setStateChangeConfirm({
+                          ...stateChangeConfirm,
+                        });
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
             <div className="flex justify-end space-x-2">
               <Button
