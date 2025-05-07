@@ -73,6 +73,8 @@ const AccessRequests: React.FC = () => {
       responseFilterCriteria: "",
     });
   const [showResponseModeration, setShowResponseModeration] = useState(false);
+  const [responseModerationContinue, setResponseModerationContinue] =
+    useState(false);
   const currentUserId = getCurrentUserId();
   const { theme, setTheme } = useTheme();
 
@@ -137,6 +139,7 @@ const AccessRequests: React.FC = () => {
         callerClientId,
         privilegeRules,
       });
+      setResponseModerationContinue(true);
     } else if (newState === "GRANTED") {
       setShowResponseModeration(true);
       console.log("requestId ==", requestId);
@@ -148,13 +151,16 @@ const AccessRequests: React.FC = () => {
         privilegeRules,
       });
     } else {
+      console.log("newState", newState);
       // For other states, go directly to confirmation
-      // setStateChangeConfirm({
-      //   requestId,
-      //   newState,
-      //   calleeClientId,
-      //   callerClientId,
-      // });
+      setStateChangeConfirm({
+        requestId,
+        newState,
+        calleeClientId,
+        callerClientId,
+        privilegeRules,
+      });
+      confirmStateChange();
     }
   };
 
@@ -342,100 +348,97 @@ const AccessRequests: React.FC = () => {
         open={
           showResponseModeration && stateChangeConfirm.newState === "GRANTED"
         }
-        onOpenChange={(open) => !open && setShowResponseModeration(false)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowResponseModeration(false);
+            setResponseModerationContinue(false);
+          }
+        }}
       >
-        <DialogContent>
+        <DialogContent style={{ maxWidth: "60rem" }}>
           <DialogHeader>
             <DialogTitle>Response Moderation</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 w-100 overflow-auto">
             <div style={{ maxHeight: "600px", overflow: "auto" }}>
-              {stateChangeConfirm?.privilegeRules.map((elem, index) => (
-                <div className="border rounded p-3 mb-3">
-                  <div className="space-y-2" key={index}>
-                    <Label htmlFor="description">Description</Label>
-                    <Input
-                      id="description"
-                      placeholder="Description"
-                      readOnly
-                      value={elem.description}
-                    />
-                  </div>
-                  <div className="space-y-2" key={index}>
-                    <Label htmlFor="requestedURL">RequestedURL</Label>
-                    <Input
-                      id="requestedURL"
-                      placeholder="RequestedURL"
-                      readOnly
-                      value={elem.requestedURL}
-                    />
-                  </div>
-                  <div className="space-y-2" key={index}>
-                    <Label htmlFor="scopes">Scopes</Label>
-                    <Input
-                      id="scopes"
-                      placeholder="Scopes"
-                      readOnly
-                      value={elem.scopes}
-                    />
-                  </div>
-                  <div className="space-y-2" key={index}>
-                    <Label htmlFor="requestedmethod">Requested Method</Label>
-                    <Input
-                      id="requestedmethod"
-                      placeholder="Requested Method"
-                      readOnly
-                      value={elem.requestedMethod}
-                    />
-                  </div>
-                  <div className="space-y-2" key={index}>
-                    <Label htmlFor="responsefields">Response Fields</Label>
-                    <Input
-                      id="responsefields"
-                      placeholder="Response Fields"
-                      value={elem.responseModeration.fields}
-                      onChange={(e) => {
-                        stateChangeConfirm.privilegeRules[
-                          index
-                        ].responseModeration.fields = e.target.value;
-                        setStateChangeConfirm({
-                          ...stateChangeConfirm,
-                        });
-                      }}
-                    />
-                  </div>
-                  <div className="space-y-2" key={index}>
-                    <Label htmlFor="responseFilterCriteria">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[50px]">Priority</TableHead>
+                    <TableHead>Requested URL</TableHead>
+                    <TableHead style={{ minWidth: "200px" }}>Scopes</TableHead>
+                    <TableHead>Method</TableHead>
+                    <TableHead className="text-right">Response Filed</TableHead>
+                    <TableHead className="text-right">
                       Response Filter Criteria
-                    </Label>
-                    <Textarea
-                      id="responseFilterCriteria"
-                      placeholder="Response Filter Criteria"
-                      value={elem.responseModeration.responseFilterCriteria}
-                      onChange={(e) => {
-                        stateChangeConfirm.privilegeRules[
-                          index
-                        ].responseModeration.responseFilterCriteria =
-                          e.target.value;
-                        setStateChangeConfirm({
-                          ...stateChangeConfirm,
-                        });
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {stateChangeConfirm?.privilegeRules.map((elem, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">
+                        {elem.priority}
+                      </TableCell>
+                      <TableCell>{elem.requestedURL}</TableCell>
+                      <TableCell>
+                        {Array.isArray(elem.scopes)
+                          ? elem.scopes.join(", ")
+                          : elem.scopes}
+                      </TableCell>
+                      <TableCell>{elem.requestedMethod}</TableCell>
+                      <TableCell>
+                        <Input
+                          id="responsefields"
+                          placeholder="Response Fields"
+                          value={elem.responseModeration.fields}
+                          style={{ width: "12rem" }}
+                          onChange={(e) => {
+                            stateChangeConfirm.privilegeRules[
+                              index
+                            ].responseModeration.fields = e.target.value;
+                            setStateChangeConfirm({
+                              ...stateChangeConfirm,
+                            });
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          style={{ width: "300px" }}
+                          id="responseFilterCriteria"
+                          placeholder="Response Filter Criteria"
+                          value={elem.responseModeration.responseFilterCriteria}
+                          onChange={(e) => {
+                            stateChangeConfirm.privilegeRules[
+                              index
+                            ].responseModeration.responseFilterCriteria =
+                              e.target.value;
+                            setStateChangeConfirm({
+                              ...stateChangeConfirm,
+                            });
+                          }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
             <div className="flex justify-end space-x-2">
               <Button
                 variant="outline"
-                onClick={() => setShowResponseModeration(false)}
+                onClick={() => {
+                  setShowResponseModeration(false);
+                  setResponseModerationContinue(false);
+                }}
               >
                 Cancel
               </Button>
               <Button
                 onClick={() => {
                   setShowResponseModeration(false);
+                  setResponseModerationContinue(true);
                   // Now show the confirmation dialog
                   if (stateChangeConfirm) {
                     // The state change confirm is already set, we just need to proceed
@@ -451,7 +454,11 @@ const AccessRequests: React.FC = () => {
 
       {/* Confirmation Dialog */}
       <AlertDialog
-        open={!!stateChangeConfirm && !showResponseModeration}
+        open={
+          !!stateChangeConfirm &&
+          !showResponseModeration &&
+          responseModerationContinue
+        }
         onOpenChange={(open) => !open && setStateChangeConfirm(null)}
       >
         <AlertDialogContent>
