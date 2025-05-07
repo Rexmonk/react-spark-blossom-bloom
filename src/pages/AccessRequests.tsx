@@ -150,7 +150,7 @@ const AccessRequests: React.FC = () => {
         callerClientId,
         privilegeRules,
       });
-    } else {
+    } else if (newState === "PENDING") {
       console.log("newState", newState);
       // For other states, go directly to confirmation
       setStateChangeConfirm({
